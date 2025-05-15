@@ -1,0 +1,16 @@
+django
+psycopg2-binary
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+python-dotenv
+django-environ
+django-extensions
+django-filter
+#swagger    
+drf-yasg
+#pillow
+Pillow
+
+
+
