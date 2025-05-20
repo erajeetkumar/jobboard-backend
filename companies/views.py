@@ -2,25 +2,14 @@
 
 from rest_framework import viewsets
 from .models import Company, CompanyMember
-from .serializers import CompanySerializer
+from .serializers import CompanySerializer, CompanyMemberSerializer
 from rest_framework.permissions import BasePermission, IsAuthenticatedOrReadOnly, IsAuthenticated
 
 from django.shortcuts import render
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.parsers import MultiPartParser, FormParser
 
-class IsEmployerAndMember(BasePermission):
-    """
-    - Only employers can create a company.
-    - Only company members can view/update.
-    """
-
-    def has_permission(self, request, view):
-        if view.action == 'create':
-            return request.user.is_authenticated and request.user.role == 'employer'
-        return request.user.is_authenticated
-
-    def has_object_permission(self, request, view, obj):
-        # obj is a Company instance
-        return CompanyMember.objects.filter(user=request.user, company=obj).exists()
+from core.permissions import IsEmployerAndMember
 
 
 #employer views
@@ -35,10 +24,29 @@ class IsEmployerAndMember(BasePermission):
     - update a company
     - delete a company
 '''
+
+@swagger_auto_schema(request_body=CompanySerializer)
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated, IsEmployerAndMember]
-
+    parser_classes = (MultiPartParser, FormParser)
+    
     def get_queryset(self):
         return Company.objects.filter(members__user=self.request.user)
+
+
+''' create a viewset for the company member model
+    - list all company members
+    - create a new company member
+    - retrieve a company member
+    - update a company member
+    - delete a company member
+'''
+class CompanyMemberViewSet(viewsets.ModelViewSet):
+    queryset = CompanyMember.objects.all()
+    serializer_class = CompanyMemberSerializer
+    permission_classes = [IsAuthenticated, IsEmployerAndMember]
+
+    def get_queryset(self):
+        return CompanyMember.objects.filter(user=self.request.user)

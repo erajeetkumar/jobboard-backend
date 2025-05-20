@@ -35,7 +35,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(
         choices=[
             ('employer', 'Employer'),
-            ('candidate', 'Job Seeker')
+            ('candidate', 'Job Seeker'),            
+            ('recruiter', 'Recruiter'),
+            ('hr', 'HR'),
         ],
         required=True
     )

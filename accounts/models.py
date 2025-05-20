@@ -44,6 +44,9 @@ class User(AbstractUser):
         CANDIDATE = 'candidate', 'Candidate'
         EMPLOYER = 'employer', 'Employer'
         ADMIN = 'administrator', 'Administrator'
+        RECRUITER = 'recruiter', 'Recruiter'
+        HR = 'hr', 'HR'
+        
         
     # Add any additional fields you want to include in your custom user model
     # For example, you can add a profile picture field:
