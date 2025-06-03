@@ -35,3 +35,15 @@ class IsCompanyMember(permissions.BasePermission):
             user=request.user,
             company=obj
         ).exists()
+
+class IsCompanyActive(permissions.BasePermission):
+    """
+    Allows access only if the company is active.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        return obj.is_active
+
+    def has_permission(self, request, view):
+        # This permission is not used in the current views
+        return True

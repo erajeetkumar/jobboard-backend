@@ -143,3 +143,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
+
+
+class SendEmailVerificationSerializer(serializers.Serializer):
+    """
+    Serializer for sending email verification.
+    """
+    email = serializers.EmailField(
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+                message=_("Enter a valid email address."),
+            )
+        ],
+        error_messages={
+            "required": _("Email is required."),
+            "invalid": _("Enter a valid email address."),
+        },
+    )
+
+    def validate_email(self, value):
+        try:
+            validate_email(value)
+        except ValidationError:
+            raise serializers.ValidationError(_("Invalid email format."))
+        return value

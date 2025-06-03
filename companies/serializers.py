@@ -38,10 +38,6 @@ class CompanyInternalSerializer(CompanyBaseSerializer):
             "established_year",
             "website",
             "industry",
-            "is_verified",
-            "is_active",
-            "created_at",
-            "updated_at",
         ]
         read_only_fields = CompanyBaseSerializer.Meta.read_only_fields + ["created_by"]
 
@@ -70,18 +66,24 @@ class CompanyInternalSerializer(CompanyBaseSerializer):
 
     # validate the name field to ensure it is unique
     def validate_name(self, value):
-        if Company.objects.filter(name=value).exists():
-            raise serializers.ValidationError(
-                "A company with this name already exists."
-            )
+        existing_company = self.instance
+        if existing_company and existing_company.name != value:            
+            if Company.objects.filter(name=value).exists():
+                raise serializers.ValidationError(
+                    "A company with this name already exists."
+                )
         return value
 
     # validate the website field to ensure it is unique
+    #check if update is being made to the website field and if updated values is not same as existing value   
     def validate_website(self, value):
-        if Company.objects.filter(website=value).exists():
-            raise serializers.ValidationError(
-                "A company with this website already exists."
-            )
+        existing_company = self.instance
+        if existing_company and existing_company.website != value:
+            # Check if the website already exists for another company
+            if Company.objects.filter(website=value).exclude(id=existing_company.id).exists():
+                raise serializers.ValidationError(
+                    "A company with this website already exists."
+                )
         return value
 
 

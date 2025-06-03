@@ -22,10 +22,25 @@ from .permissions import IsCompanyAdmin, IsCompanyMember
 from core.permissions import IsEmployerAndMember
 from django.shortcuts import get_object_or_404
 
+"""
+Company views for handling company-related operations.
+These views include listing, creating, updating, and deleting companies,
+as well as managing company members.
+"""
+
+"""CompanyListCreateView: Handles listing and creating companies.
+   - GET: List all companies the authenticated user is a member of.
+   - POST: Create a new company (only accessible to company admins).
+   - Uses CompanyInternalSerializer for serialization.
+   - Requires IsAuthenticated and IsCompanyAdmin permissions."""
+
 
 class CompanyListCreateView(generics.ListCreateAPIView):
     serializer_class = CompanyInternalSerializer
-    permission_classes = [IsAuthenticated, IsCompanyAdmin] #allowed to only company admins
+    permission_classes = [
+        IsAuthenticated,
+        IsCompanyAdmin,
+    ]  # allowed to only company admins
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
@@ -34,7 +49,15 @@ class CompanyListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
 
         company = serializer.save(created_by=self.request.user)
-        
+
+
+""" CompanyInternalDetail: Handles retrieving, updating, and deleting a company.
+   - GET: Retrieve a company by its primary key (pk).
+   - PUT/PATCH: Update a company by its primary key (pk).
+   - DELETE: Delete a company by its primary key (pk).
+   - Uses CompanyInternalSerializer for serialization.
+   - Requires IsAuthenticated and IsCompanyAdmin permissions.
+   """
 
 
 class CompanyInternalDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -45,13 +68,15 @@ class CompanyInternalDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "pk"
 
 
+'''CompanyPublicDetail: Handles retrieving company details for public access.
+   - GET: Retrieve a company by its slug.'''    
 class CompanyPublicDetail(generics.RetrieveAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanyPublicSerializer
     permission_classes = [AllowAny]
     lookup_field = "slug"
 
-
+'''CompanyMemberListCreateView: Handles listing and creating company members.'''
 class CompanyMemberListCreateView(generics.ListCreateAPIView):
     serializer_class = CompanyMemberSerializer
     permission_classes = [IsAuthenticated, IsCompanyMember]
@@ -62,7 +87,7 @@ class CompanyMemberListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         company = get_object_or_404(Company, pk=self.kwargs["pk"])
-        if(serializer.is_valid()):          
+        if serializer.is_valid():
             serializer.save(company=company)
 
 
