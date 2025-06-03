@@ -160,3 +160,207 @@ class CompanyModelTest(TestCase):
             is_active=True
         )
         self.assertEqual(company.slug, "tech-innovations")
+        
+#create test cases for viewsets
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class CompanyViewSetTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="employer@abc.com",
+            password="password123",
+            role="employer"
+        )
+        
+        self.industry = Industry.objects.create(name="Tech", description="Technology sector")
+        self.company = Company.objects.create(
+            name="Tech Corp",
+            website="http://techcorp.com",
+            industry=self.industry,
+            location="New York",
+            description="A tech company",
+            established_year=2000,
+            is_verified=True,
+            is_active=True,
+            created_by=self.user,
+            logo=None
+        )
+        self.url = reverse('company-list')
+        self.company_member = CompanyMember.objects.create(
+            user=self.user,
+            company=self.company,
+            role="admin"
+        )
+        self.company_member.save()
+        
+        refresh = RefreshToken.for_user(self.user)
+        self.access_token = str(refresh.access_token)                        
+        # Set authorization header for all requests
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+        
+        #create another user and add them to the company
+        self.user2 = User.objects.create_user(
+            email="recruiter@abc.com",
+            first_name="John",
+            last_name="Doe",
+            password="password123",
+            role="recruiter"
+        )
+        self.company_member2 = CompanyMember.objects.create(
+            user=self.user2,
+            company=self.company,
+            role="member"
+        )
+        self.company_member2.save()
+        
+        #create another employer user and create a new company
+        self.user3 = User.objects.create_user(
+            email="employer1@xyz.com",
+            password="password123",
+            role="employer",
+            first_name="Jane",
+            last_name="Smith"
+        )
+        self.company2 = Company.objects.create(
+            name="Finance Inc",
+            website="http://financeinc.com",
+            industry=self.industry,
+            location="San Francisco",
+            description="A finance company",
+            established_year=1995,
+            is_verified=False,
+            is_active=True,
+            created_by=self.user3,
+            logo=None
+        )
+        self.company2_member = CompanyMember.objects.create(
+            user=self.user3,
+            company=self.company2,
+            role="admin"
+        )
+
+        self.company2_member.save()
+        
+    def test_create_company(self):
+        data = {
+            "name": "New Company",
+            "website": "http://newcompany.com",
+            "industry": self.industry.id,
+            "location": "Los Angeles",
+            "description": "A new company",
+            "established_year": 2023          
+        }
+            
+        response = self.client.post(self.url, data)
+        # Check if the response status code is 201 Created       
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Company.objects.count(), 3)
+        self.assertEqual(Company.objects.get(id=response.data['id']).name, 'New Company')
+        
+    def test_create_company_without_authentication(self):
+        self.client.logout()
+        data = {
+            "name": "New Company",
+            "website": "http://newcompany.com",
+            "industry": self.industry.id,
+            "location": "Los Angeles",
+            "description": "A new company",
+            "established_year": 2023         
+            
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Company.objects.count(), 2)
+        
+    def test_create_company_with_invalid_data(self):
+        data = {
+            "name": "",
+            "website": "invalid_url",
+            "industry": self.industry.id,
+            "location": "",
+            "description": "A new company",
+            "established_year": 2023          
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Company.objects.count(), 2)
+    
+    #test with different user roles
+    def test_create_company_with_different_user_role(self):
+        self.client.force_authenticate(user=self.user2)
+        data = {
+            "name": "New Company",
+            "website": "http://newcompany.com",
+            "industry": self.industry.id,
+            "location": "Los Angeles",
+            "description": "A new company",
+            "established_year": 2023,
+            "is_verified": False,
+            "is_active": True,
+            
+        }
+        response = self.client.post(self.url, data, )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Company.objects.count(), 2)
+        
+    def test_create_company_with_another_employer(self):
+        #self.client.force_authenticate(user=self.user3)
+        refresh = RefreshToken.for_user(self.user3)
+        self.access_token = str(refresh.access_token)                        
+        # Set authorization header for all requests
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+        data = {
+            "name": "New Company",
+            "website": "http://newcompany.com",
+            "industry": self.industry.id,
+            "location": "Los Angeles",
+            "description": "A new company",
+            "established_year": 2023,
+            "is_verified": False,
+            "is_active": True,
+           
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        #self.assertEqual(Company.objects.count(), 2)
+    
+    #test to get company from another employer
+    def test_get_company_from_another_employer(self):
+        refresh = RefreshToken.for_user(self.user3)
+        self.access_token = str(refresh.access_token)                        
+        # Set authorization header for all requests
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+        url = reverse('company-detail', args=[self.company2.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'Finance Inc')  
+        self.assertEqual(response.data['website'], 'http://financeinc.com')
+        self.assertEqual(response.data['industry'], self.industry.id)
+        self.assertEqual(response.data['location'], 'San Francisco')
+    
+    #test to get all companies of the logged in user
+    def test_get_all_companies_of_user(self):
+        url = reverse('company-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Check if two companies are returned
+        self.assertEqual(response.data[0]['name'], 'Tech Corp')
+       
+        
+        
+    def test_get_all_companies(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)  # Check if two companies are returned
+        self.assertEqual(response.data[0]['name'], 'Tech Corp')
+        self.assertEqual(response.data[1]['name'], 'Finance Inc')
+        
+    def test_get_company_detail(self):
+        url = reverse('company-detail', args=[self.company.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'Tech Corp')
+        self.assertEqual(response.data['website'], 'http://techcorp.com')
+        self.assertEqual(response.data['industry'], self.industry.id)
+        self.assertEqual(response.data['location'], 'New York')

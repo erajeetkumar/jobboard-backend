@@ -1,12 +1,24 @@
 from django.urls import path
-from .views import CompanyViewSet, CompanyMemberViewSet
+
+from .views import (
+    CompanyPublicDetail,
+    CompanyInternalDetail,
+    CompanyListCreateView,
+    CompanyMemberListCreateView,
+    CompanyMemberUpdateDeleteView
+)
 
 urlpatterns = [
     
-    path('', CompanyViewSet.as_view({'get': 'list', 'post': 'create'}), name='company-list'),
-    path('<int:pk>/', CompanyViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='company-detail'),
-  
-    #include other URLs for company members and industries if needed
-     path('members/', CompanyMemberViewSet.as_view({'get': 'list', 'post': 'create'}), name='company-member-list'),
+    path('', CompanyListCreateView.as_view(), name='company-list-create'),
     
+    # Public
+    path('<slug:slug>/', CompanyPublicDetail.as_view(), name='company-public-detail'),
+
+    # Internal (authenticated)    
+    path('id/<int:pk>/', CompanyInternalDetail.as_view(), name='company-internal-detail'),
+
+    # Member management
+    #path('<int:pk>/members/', CompanyMemberListCreateView.as_view(), name='company-members'),
+    #path('<int:pk>/members/<int:user_id>/', CompanyMemberUpdateDeleteView.as_view(), name='company-member-detail'),
 ]

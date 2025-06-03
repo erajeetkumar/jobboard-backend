@@ -70,7 +70,8 @@ INSTALLED_APPS = [
     
     #swagger
     'drf_yasg',
-    
+    #waffle
+    'waffle',
     
         
 ]
@@ -179,7 +180,7 @@ from datetime import timedelta
 
 #Auth token settings
 SIMPLE_JWT = {
-    'ACCESS TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False, # if True, refresh token will be rotated on every request
 }
@@ -199,3 +200,15 @@ SWAGGER_SETTINGS = {
         }
     }
 }
+
+#email backend
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.mailtrap.io')  # Mailtrap SMTP server
+EMAIL_HOST_PORT = os.getenv('EMAIL_PORT', '587')  # Mailtrap SMTP port
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your_mailtrap_username')  # copy from Mailtrap
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your_mailtrap_password')  # copy from Mailtrap
+EMAIL_PORT = os.getenv('EMAIL_PORT', '587')  # Default SMTP port
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ingenimos.com')  # Default sender email

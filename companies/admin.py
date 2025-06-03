@@ -4,7 +4,7 @@ from django.contrib import admin
 from .models import Company, Industry, CompanyMember
 
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'website', 'industry', 'location', 'is_verified', 'is_active')
+    list_display = ('name', 'website', 'slug', 'industry', 'location', 'is_verified', 'is_active')
     search_fields = ('name', 'website', 'industry__name')
     list_filter = ('is_verified', 'is_active', 'industry')
     ordering = ('-created_at',)

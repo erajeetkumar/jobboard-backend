@@ -1,52 +1,83 @@
 # Create your views here.
 
-from rest_framework import viewsets
+from rest_framework import viewsets, generics, status
 from .models import Company, CompanyMember
-from .serializers import CompanySerializer, CompanyMemberSerializer
-from rest_framework.permissions import BasePermission, IsAuthenticatedOrReadOnly, IsAuthenticated
+from .serializers import (
+    CompanyMemberSerializer,
+    CompanyBaseSerializer,
+    CompanyInternalSerializer,
+    CompanyPublicSerializer,
+)
+from rest_framework.permissions import (
+    BasePermission,
+    IsAuthenticatedOrReadOnly,
+    IsAuthenticated,
+    AllowAny,
+)
 
 from django.shortcuts import render
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.parsers import MultiPartParser, FormParser
-
+from .permissions import IsCompanyAdmin, IsCompanyMember
 from core.permissions import IsEmployerAndMember
+from django.shortcuts import get_object_or_404
 
 
-#employer views
-# can create one company
-# can update and delete their own company
-# can add additional members to their company
+class CompanyListCreateView(generics.ListCreateAPIView):
+    serializer_class = CompanyInternalSerializer
+    permission_classes = [IsAuthenticated, IsCompanyAdmin] #allowed to only company admins
+    parser_classes = [MultiPartParser, FormParser]
 
-''' create a viewset for the company model
-    - list all companies
-    - create a new company
-    - retrieve a company
-    - update a company
-    - delete a company
-'''
-
-@swagger_auto_schema(request_body=CompanySerializer)
-class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.all()
-    serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated, IsEmployerAndMember]
-    parser_classes = (MultiPartParser, FormParser)
-    
     def get_queryset(self):
         return Company.objects.filter(members__user=self.request.user)
 
+    def perform_create(self, serializer):
 
-''' create a viewset for the company member model
-    - list all company members
-    - create a new company member
-    - retrieve a company member
-    - update a company member
-    - delete a company member
-'''
-class CompanyMemberViewSet(viewsets.ModelViewSet):
-    queryset = CompanyMember.objects.all()
+        company = serializer.save(created_by=self.request.user)
+        
+
+
+class CompanyInternalDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Company.objects.all()
+    serializer_class = CompanyInternalSerializer
+    permission_classes = [IsAuthenticated, IsCompanyAdmin]
+
+    lookup_field = "pk"
+
+
+class CompanyPublicDetail(generics.RetrieveAPIView):
+    queryset = Company.objects.all()
+    serializer_class = CompanyPublicSerializer
+    permission_classes = [AllowAny]
+    lookup_field = "slug"
+
+
+class CompanyMemberListCreateView(generics.ListCreateAPIView):
     serializer_class = CompanyMemberSerializer
-    permission_classes = [IsAuthenticated, IsEmployerAndMember]
+    permission_classes = [IsAuthenticated, IsCompanyMember]
 
     def get_queryset(self):
-        return CompanyMember.objects.filter(user=self.request.user)
+        company_id = self.kwargs["pk"]
+        return CompanyMember.objects.filter(company__id=company_id)
+
+    def perform_create(self, serializer):
+        company = get_object_or_404(Company, pk=self.kwargs["pk"])
+        if(serializer.is_valid()):          
+            serializer.save(company=company)
+
+
+class CompanyMemberUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CompanyMemberSerializer
+    permission_classes = [IsAuthenticated, IsCompanyMember]
+    lookup_field = "user_id"
+
+    def get_queryset(self):
+        company_id = self.kwargs["pk"]
+        return CompanyMember.objects.filter(company__id=company_id)
+
+    def get_object(self):
+        company_id = self.kwargs["pk"]
+        user_id = self.kwargs["user_id"]
+        return get_object_or_404(
+            CompanyMember, company__id=company_id, user__id=user_id
+        )

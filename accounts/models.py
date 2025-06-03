@@ -106,6 +106,7 @@ class User(AbstractUser):
         verbose_name=_('user permissions'),
     )
     
+    is_verified = models.BooleanField(default=False, help_text=_('Indicates whether the user has verified their email address.'))
     
     def __str__(self):
         return self.get_full_name()
