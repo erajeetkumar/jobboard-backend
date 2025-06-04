@@ -28,8 +28,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration.
     """
+
     user = None
-    
+
     email = serializers.EmailField(
         required=True,
         validators=[
@@ -37,7 +38,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
                 message=_("Enter a valid email address."),
             )
-        ],        
+        ],
         error_messages={
             "unique": _("A user with that email already exists."),
             "invalid": _("Enter a valid email address."),
@@ -72,24 +73,27 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        
+        logger.info("Creating user with data: %s", validated_data)
+        
         try:
             validate_email(validated_data["email"])
         except ValidationError:
             raise serializers.ValidationError("Invalid email format.")
 
         try:
-            
-            #check if the user already exists
+
+            # check if the user already exists
             if User.objects.filter(email=validated_data["email"]).exists():
                 raise serializers.ValidationError(
                     "A user with this email already exists."
                 )
-            
-            # Create the user with hashed password
-            
+
+            logger.info(f"Creating user with pass: {validated_data['password']}")
+
             user = User.objects.create_user(
                 email=validated_data["email"],
-                password=make_password(validated_data["password"]),
+                password=validated_data["password"],
                 first_name=validated_data["first_name"],
                 last_name=validated_data["last_name"],
                 phone_number=validated_data.get("phone_number", ""),
@@ -98,19 +102,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 is_verified=False,
             )
             self.user = user
-            request = self.context.get('request')
-            
+            request = self.context.get("request")
+
+            # user.set_password( make_password(validated_data["password"]))  # Hash the password
+            # user.save()
 
             # check waffle flag enforce_verification_email for email verification
-            if switch_is_active( "enforce_verification_email"):
+            if switch_is_active("enforce_verification_email"):
                 self.send_verification_email(user)
 
         except Exception as e:
             if self.user:
                 # If user creation failed, delete the user instance
                 self.user.delete()
-            
-            
+
             logger.error(f"Error creating user: {e}")
             raise serializers.ValidationError(
                 f"An error occurred while creating the user. {e}"
@@ -129,7 +134,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         relative_link = f"/api/accounts/verify-email/?token={str(token)}"
         absurl = f"{current_site}{relative_link}"
         # Use Django email or external service
-        print(f"Email verification link: {absurl}")
+        #print(f"Email verification link: {absurl}")
 
         subject = "Verify Your Email Address"
         html_content = render_to_string(
@@ -149,6 +154,7 @@ class SendEmailVerificationSerializer(serializers.Serializer):
     """
     Serializer for sending email verification.
     """
+
     email = serializers.EmailField(
         required=True,
         validators=[

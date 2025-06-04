@@ -28,6 +28,8 @@ class UserRegistrationView(generics.CreateAPIView):
 
     def post(self, request):
 
+        logger.info("User registration request received.")
+        
         serializer = UserRegistrationSerializer(
             data=request.data, context={"request": request}
         )
