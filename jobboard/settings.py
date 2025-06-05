@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'interviews',
     'notifications',
     'search',
+    'core',
         
     'memberships',
     'analytics',    
@@ -180,8 +181,8 @@ from datetime import timedelta
 
 #Auth token settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': False, # if True, refresh token will be rotated on every request
 }
 
@@ -212,3 +213,23 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your_mailtrap_password')
 EMAIL_PORT = os.getenv('EMAIL_PORT', '587')  # Default SMTP port
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ingenimos.com')  # Default sender email
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
