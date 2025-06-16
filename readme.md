@@ -94,3 +94,20 @@ python manage.py runserver
 ### API Endpoints
 
 coming soon
+
+## 🙌 Contribute or Star
+
+If this project helped you, please ⭐ it or share with other devs. Contributions are welcome via pull requests!
+
+[![Built by WebAcer Software](https://img.shields.io/badge/built%20by-WebAcer%20Software-blue)](https://www.webacersoftware.com)
+
+## 🔗 See Also
+
+Want to see how we handled real-world Zoom API integration with HubSpot?
+
+👉 Check out our [HubSpot + Zoom Webinar WordPress Plugin Case Study](https://www.webacersoftware.com/work/hubspot-with-zoom-webinar-integration/)
+
+Explore more developer tools and integrations by [WebAcer Software](https://www.webacersoftware.com).
+
+
+

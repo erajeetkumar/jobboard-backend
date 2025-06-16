@@ -16,7 +16,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        user.set_password( make_password(password))
+        user.set_password( password)
         user.save(using=self._db)
         return user
 
@@ -106,6 +106,7 @@ class User(AbstractUser):
         verbose_name=_('user permissions'),
     )
     
+    is_verified = models.BooleanField(default=False, help_text=_('Indicates whether the user has verified their email address.'))
     
     def __str__(self):
         return self.get_full_name()
