@@ -52,6 +52,9 @@ urlpatterns = [
     path("api/companies/", include("companies.urls")),
     # jobs urls
     path("api/jobs/", include("jobs.urls")),
+    
+    path("", include("profiles.urls")),
+    
     # swagger urls
     re_path(
         r"^swagger/$",

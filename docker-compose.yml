@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: jobboard_postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-job_board_v2}
+      POSTGRES_USER: ${DB_USER:-job_board}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-NrKun6cuc0Ve6YE}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-job_board} -d $${POSTGRES_DB:-job_board_v2}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: jobboard_django_web
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8002:8000"
+
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-job_board_v2}
+      - DB_USER=${DB_USER:-job_board}
+      - DB_PASSWORD=${DB_PASSWORD:-NrKun6cuc0Ve6YE}
+      - DJANGO_SECRET=${DJANGO_SECRET:-django-insecure-4@#&!$@^%&*}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

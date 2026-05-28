@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+env/
+venv/
+ENV/
+
+# Database / Logs
+db.sqlite3
+debug.log
+*.log
+
+# OS-specific
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Media and Static uploads
+media/

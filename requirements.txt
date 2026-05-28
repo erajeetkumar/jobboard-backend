@@ -11,6 +11,8 @@ django-filter
 drf-yasg
 #pillow
 Pillow
+django-waffle
+
 
 
 

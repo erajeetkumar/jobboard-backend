@@ -3,9 +3,11 @@ from django.db import models
 # Create your models here.
 from django.db import models
 from django.conf import settings
+from django.core.signing import TimestampSigner
+
 
 '''Job Seeker Profile Model
-This module represents a job seeker's profile, including personal information, education, experience, skills, and certifications.
+This module represents a job seeker's profile, including resume.
 '''
 class JobSeekerProfile(models.Model):
     user = models.OneToOneField(
@@ -16,20 +18,30 @@ class JobSeekerProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     resume = models.FileField(upload_to="resumes/", blank=True, null=True)
-    skills = models.TextField(blank=True, help_text="Comma-separated skills")
+    #skills = models.TextField(blank=True, help_text="Comma-separated skills")
     github = models.URLField(blank=True, null=True)
     portfolio = models.URLField(blank=True, null=True)
+    headline = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="A short headline or summary of your professional profile",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.full_name or self.user.email
+        return self.user.get_full_name() or self.user.email
+    
+    
+    
 
 
 from core.models import Institution, Degree
 from core.models import FieldOfStudy  # Assuming FieldOfStudy is defined in core.models
 
-
+'''Education Model
+This model represents the education details of a job seeker, including institution, degree, field of study, and dates attended.'''
 class Education(models.Model):
     profile = models.ForeignKey(
         JobSeekerProfile, on_delete=models.CASCADE, related_name="education"
@@ -68,6 +80,7 @@ class Education(models.Model):
         verbose_name_plural = "Educations"
         ordering = ["-start_at"]
 
+    
     def save(self, *args, **kwargs):
         if self.institution:
             self.institution_name = self.institution.name
@@ -81,6 +94,8 @@ class Education(models.Model):
     def __str__(self):
         return f"{self.degree} at {self.institution}"
 
+'''Experience Model
+This model represents the work experience of a job seeker, including company name, job title, dates worked, responsibilities, and whether they are still employed there.'''
 
 class Experience(models.Model):
     profile = models.ForeignKey(
@@ -100,9 +115,10 @@ class Experience(models.Model):
     updated_at = models.DateTimeField(auto_now=True)    
 
     def __str__(self):
-        return f"{self.title} at {self.company}"
+        return f"{self.job_title} at {self.company}"
 
-
+'''User Skill Model
+This model represents a skill possessed by a job seeker, including the skill name, level, and associated profile. It can be linked to a predefined skill from the core app.'''
 class UserSkill(models.Model):
     profile = models.ForeignKey(
         JobSeekerProfile, on_delete=models.CASCADE, related_name="user_skills"
@@ -131,6 +147,9 @@ class UserSkill(models.Model):
     def __str__(self):
         return self.name
 
+'''Certification Model
+This model represents a certification obtained by a job seeker, including details such as the name, issuer, issue date, expiration date, and certificate URL.
+a document field is included to upload the certification document.'''
 
 class Certification(models.Model):
     profile = models.ForeignKey(
@@ -141,6 +160,15 @@ class Certification(models.Model):
     issue_date = models.DateField(blank=True, null=True)
     expiration_date = models.DateField(blank=True, null=True)
     certificate_url = models.URLField(blank=True, null=True)
+    certificate_number = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True, help_text="Description of the certification")
+    document = models.FileField(
+        upload_to="certifications/",
+        blank=True,
+        null=True,
+        help_text="Upload the certification document",
+        
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -157,3 +185,26 @@ class Certification(models.Model):
 
     def __str__(self):
         return self.name
+
+User = settings.AUTH_USER_MODEL
+
+'''Profile View Model
+This model tracks views of job seeker profiles by users, including the viewer, candidate, and metadata about the view.
+'''
+class ProfileView(models.Model):
+    viewer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='profile_views'
+    )
+    candidate = models.ForeignKey(
+        JobSeekerProfile, on_delete=models.CASCADE, related_name='views'
+    )
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=100, blank=True, null=True)  # e.g., 'job_app', 'search'
+    user_agent = models.TextField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["candidate", "viewed_at"]),
+            models.Index(fields=["viewer", "viewed_at"]),
+        ]
